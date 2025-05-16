@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -9,11 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from './ui/card';
+import { toast } from 'sonner';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Mail, Trash2 } from 'lucide-react';
+import { Loader, Mail, Trash2 } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { createGroup, CreateGroupState } from '@/app/app/grupos/novo/actions';
 
 interface Participant {
   name: string;
@@ -31,6 +34,14 @@ export default function NewGroupForm({
 
   const [groupName, setGroupName] = useState('');
 
+  const [state, formAction, pending] = useActionState<
+    CreateGroupState,
+    FormData
+  >(createGroup as any, {
+    success: null,
+    message: '',
+  });
+
   function updtedParticipants(
     index: number,
     field: keyof Participant,
@@ -42,29 +53,22 @@ export default function NewGroupForm({
   }
 
   function removeParticipant(index: number) {
-    // const newParticipants = [...participants];
-
-    // const currentParticipant = newParticipants.find(
-    //   (participant) => participant.email === participantEmail
-    // );
-
-    // const removeParticipant = newParticipants.filter(
-    //   (participant) => participant.email !== currentParticipant?.email
-    // );
-
     const removeParticipant = participants.filter((_, i) => i !== index);
 
     setParticipants(removeParticipant);
   }
 
   function addParticipant() {
-    const newParticipant = [
-      ...participants,
-      { name: '', email: loggedUser.email || '' },
-    ];
+    const newParticipant = [...participants, { name: '', email: '' }];
 
     setParticipants(newParticipant);
   }
+
+  useEffect(() => {
+    if (state.success === false) {
+      toast.error(state.message);
+    }
+  }, [state]);
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -73,7 +77,7 @@ export default function NewGroupForm({
         <CardDescription>Convide seus amigos para participar</CardDescription>
       </CardHeader>
 
-      <form action={() => {}}>
+      <form action={formAction}>
         <CardContent className="space-y-2">
           <Label htmlFor="group-name">Nome do grupo</Label>
           <Input
@@ -153,9 +157,10 @@ export default function NewGroupForm({
 
           <Button
             type="submit"
-            className="flex items-center space-x-2 w-full md:w-auto"
+            className="bg-red-600 flex items-center space-x-2 w-full md:w-auto"
           >
             <Mail className="w-3 h-3" /> Criar grupo e enviar emails
+            {pending && <Loader className="animate-spin" />}
           </Button>
         </CardFooter>
       </form>
